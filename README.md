@@ -2,6 +2,8 @@
 
 This is a little Markdown editor [Try here](https://nav9v.github.io/online-markdown-editor). It's designed to handle a bunch of cool stuff, making it easy to write and preview your documents.
 
+This version also includes a resizable split view and editor visibility controls for a smoother writing workflow.
+
 ![Preview](https://github.com/user-attachments/assets/beaf8c9e-7cd7-4a57-b9f1-78770c772f96)
 
 
@@ -12,6 +14,8 @@ This is a little Markdown editor [Try here](https://nav9v.github.io/online-markd
 Quick rundown of the features:
 
 *   **Live Markdown Preview:** As you type Markdown on the left, you'll see it rendered as HTML on the right, almost instantly!
+*   **Resizable Split Layout:** Drag the vertical separator between the editor and preview panes to resize each side on desktop.
+*   **Show/Hide Editor Controls:** Toggle the editor on and off from the header so you can focus on the rendered preview when needed.
 *   **Switchable Markdown Engines:** You can choose between two popular Markdown parsers:
     *   `markdown-it`: Generally great for features like footnotes and follows CommonMark closely.
     *   `marked`: Another fast and reliable option.
@@ -37,6 +41,16 @@ Getting this running on your own machine is super simple because it's just HTML,
 3.  **That's It!** You should see the editor ready to go.
 
 **Important Note:** This editor relies on several external libraries (like `markdown-it`, `MathJax`, `KaTeX`, `highlight.js`, `Mermaid`, etc.) that are loaded from the internet (CDNs). **This means you'll need an active internet connection for all the features to work correctly when you run `index.html` locally.**
+
+## Recent UI Changes
+
+*   Added a draggable vertical separator so the editor and preview widths can be adjusted on desktop.
+*   Added a header button to show or hide the editor.
+*   Kept the mobile editor/preview switching behavior while wiring the same visibility control into smaller screens.
+
+## Attribution
+
+This codebase is based on and adapted from [nav9v/online-markdown-editor](https://github.com/nav9v/online-markdown-editor). Credit for the original project, concept, and core implementation belongs to the original author and repository.
 
 ### Inspiration came from [here](https://github.com/kerzol/markdown-mathjax)
 

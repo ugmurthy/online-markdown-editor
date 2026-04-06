@@ -182,20 +182,64 @@ html {
 .container {
     display: flex;
     height: calc(100vh - 50px);
-    width: 100vw;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    --editor-pane-width: 50%;
 }
 
 .pane {
-    flex: 1;
+    flex: 1 1 auto;
     height: 100%;
     overflow-y: auto;
     padding: 20px;
     box-sizing: border-box;
     position: relative;
+    min-width: 0;
+}
+
+.pane-resizer {
+    flex: 0 0 14px;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    cursor: col-resize;
+    background-color: #F0EADC;
+    touch-action: none;
+}
+
+.pane-resizer::before {
+    content: "";
+    width: 2px;
+    background-color: #E5D0AC;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pane-resizer:hover::before,
+.pane-resizer.is-dragging::before,
+.pane-resizer:focus::before,
+body.is-resizing .pane-resizer::before {
+    background-color: #A31D1D;
+    box-shadow: 0 0 0 2px rgba(163, 29, 29, 0.12);
+}
+
+.pane-resizer:focus {
+    outline: none;
+}
+
+body.is-resizing,
+body.is-resizing * {
+    cursor: col-resize;
+    user-select: none;
+}
+
+.container.editor-hidden #editor-pane,
+.container.editor-hidden .pane-resizer {
+    display: none;
 }
 
 #editor-pane {
-    border-right: 1px solid #E5D0AC;
+    flex: 0 0 var(--editor-pane-width);
     display: flex;
     flex-direction: column;
     background-color: #FEF9E1;
@@ -217,6 +261,7 @@ html {
 }
 
 #preview-pane {
+    flex: 1 1 0;
     background-color: #FEF9E1;
     color: #000;
 }
@@ -497,6 +542,10 @@ input:focus {
     margin-right: 10px;
 }
 
+.mobile-editor-visibility-btn {
+    display: none;
+}
+
 .mobile-toggle-buttons button {
     padding: 6px 12px;
     border-radius: 4px;
@@ -672,6 +721,16 @@ input:focus {
         margin-bottom: 8px;
     }
 
+    .mobile-editor-visibility-btn {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        margin: 0 auto 8px auto;
+        order: 0;
+        width: calc(100% - 18px);
+        max-width: 280px;
+    }
+
     .mobile-toggle-buttons button {
         padding: 8px 16px;
         font-size: 0.9em;
@@ -757,6 +816,10 @@ input:focus {
         margin-bottom: 0;
     }
 
+    .pane-resizer {
+        display: none !important;
+    }
+
 
     .pane {
         height: 100%;
@@ -768,6 +831,7 @@ input:focus {
 
     #editor-pane,
     #preview-pane {
+        flex: 1 1 auto;
         max-height: 100%;
     }
 

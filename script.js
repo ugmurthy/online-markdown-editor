@@ -16,6 +16,8 @@ const Editor = {
         mathJaxProcessing: false,
         localStorageKey: 'markdownEditorContent',
         autosaveInterval: 5000,
+        minPaneWidth: 280,
+        paneResizerWidth: 14,
     },
     state: {
         currentMathEngine: 'katex',
@@ -37,11 +39,17 @@ const Editor = {
         isMobileView: false,
         currentMobilePane: 'editor',
         lastSavedTime: null,
+        editorVisible: true,
+        desktopEditorWidth: null,
+        isResizingPanes: false,
     },
     elements: {
+        container: null,
+        editorPane: null,
         textarea: null,
         previewContent: null,
         previewPane: null,
+        paneResizer: null,
         toolbar: null,
         markdownItBtn: null,
         markedBtn: null,
@@ -60,6 +68,8 @@ const Editor = {
         buffer: null,
         showEditorBtn: null,
         showPreviewBtn: null,
+        toggleEditorVisibilityBtn: null,
+        toggleEditorVisibilityMobileBtn: null,
         autosaveIndicator: null,
     },
     markdownItInstance: null,
@@ -68,7 +78,10 @@ const Editor = {
     autosaveTimer: null,
 
     Init: function () {
-        this.getElements();
+        if (!this.getElements()) {
+            return;
+        }
+
         this.createBufferElement();
         this.setupMarkdownRenderers();
         this.InitializeMermaid();
@@ -88,9 +101,12 @@ const Editor = {
     },
 
     getElements: function () {
+        this.elements.container = document.querySelector(".container");
+        this.elements.editorPane = document.getElementById("editor-pane");
         this.elements.textarea = document.getElementById("markdown-input");
         this.elements.previewContent = document.getElementById("preview-content");
         this.elements.previewPane = document.getElementById("preview-pane");
+        this.elements.paneResizer = document.getElementById("pane-resizer");
         this.elements.toolbar = document.querySelector(".toolbar");
         this.elements.markdownItBtn = document.getElementById("btn-markdown-it");
         this.elements.markedBtn = document.getElementById("btn-marked");
@@ -108,9 +124,11 @@ const Editor = {
         this.elements.customStyleTag = document.getElementById("custom-styles-output");
         this.elements.showEditorBtn = document.getElementById("btn-show-editor");
         this.elements.showPreviewBtn = document.getElementById("btn-show-preview");
+        this.elements.toggleEditorVisibilityBtn = document.getElementById("btn-toggle-editor-visibility");
+        this.elements.toggleEditorVisibilityMobileBtn = document.getElementById("btn-toggle-editor-visibility-mobile");
         this.elements.autosaveIndicator = document.getElementById("autosave-indicator");
 
-        if (!this.elements.textarea || !this.elements.previewContent || !this.elements.previewPane) {
+        if (!this.elements.container || !this.elements.editorPane || !this.elements.textarea || !this.elements.previewContent || !this.elements.previewPane || !this.elements.paneResizer) {
             console.error("Critical elements not found. Aborting initialization.");
             alert("Error initializing editor: Required elements missing.");
             return false;
@@ -226,9 +244,27 @@ const Editor = {
         this.elements.toggleCssBtn.addEventListener('click', this.ToggleCustomCSS.bind(this));
         this.elements.applyCssBtn.addEventListener('click', this.ApplyCustomCSS.bind(this));
         this.elements.closeCssBtn.addEventListener('click', this.ToggleCustomCSS.bind(this));
+
+        if (this.elements.toggleEditorVisibilityBtn) {
+            this.elements.toggleEditorVisibilityBtn.addEventListener('click', () => this.ToggleEditorVisibility());
+        }
+
+        if (this.elements.toggleEditorVisibilityMobileBtn) {
+            this.elements.toggleEditorVisibilityMobileBtn.addEventListener('click', () => this.ToggleEditorVisibility());
+        }
+
+        if (this.elements.paneResizer) {
+            this.elements.paneResizer.addEventListener('pointerdown', this.StartPaneResize.bind(this));
+            this.elements.paneResizer.addEventListener('keydown', this.HandlePaneResizerKeydown.bind(this));
+        }
+
+        window.addEventListener('pointermove', this.ResizePanes.bind(this));
+        window.addEventListener('pointerup', this.StopPaneResize.bind(this));
+        window.addEventListener('pointercancel', this.StopPaneResize.bind(this));
     },
 
     initializeResponsiveUI: function () {
+        this.state.desktopEditorWidth = this.getDefaultEditorWidth();
         this.CheckMobileView();
         window.addEventListener('resize', this.CheckMobileView.bind(this));
 
@@ -238,6 +274,217 @@ const Editor = {
         }
 
         this.ConnectMobileMenuButtons();
+    },
+
+    ToggleEditorVisibility: function () {
+        if (this.state.isMobileView) {
+            this.SetMobilePane(this.state.currentMobilePane === 'editor' ? 'preview' : 'editor');
+            return;
+        }
+
+        this.state.editorVisible = !this.state.editorVisible;
+        if (this.state.editorVisible && !this.state.desktopEditorWidth) {
+            this.state.desktopEditorWidth = this.getDefaultEditorWidth();
+        }
+
+        this.ApplyDesktopPaneLayout();
+
+        if (this.state.editorVisible) {
+            this.elements.textarea.focus();
+        } else {
+            this.UpdatePreview();
+        }
+    },
+
+    StartPaneResize: function (event) {
+        if (this.state.isMobileView || !this.state.editorVisible || !this.elements.paneResizer) {
+            return;
+        }
+
+        this.state.isResizingPanes = true;
+        this.elements.paneResizer.classList.add('is-dragging');
+        document.body.classList.add('is-resizing');
+
+        if (typeof this.elements.paneResizer.setPointerCapture === 'function') {
+            this.elements.paneResizer.setPointerCapture(event.pointerId);
+        }
+
+        this.ResizePanes(event);
+        event.preventDefault();
+    },
+
+    ResizePanes: function (event) {
+        if (!this.state.isResizingPanes || !this.elements.container) {
+            return;
+        }
+
+        const containerRect = this.elements.container.getBoundingClientRect();
+        const nextWidth = this.ClampEditorWidth(event.clientX - containerRect.left);
+        this.state.desktopEditorWidth = nextWidth;
+        this.ApplyDesktopPaneLayout();
+    },
+
+    StopPaneResize: function (event) {
+        if (!this.state.isResizingPanes) {
+            return;
+        }
+
+        this.state.isResizingPanes = false;
+        document.body.classList.remove('is-resizing');
+
+        if (this.elements.paneResizer) {
+            this.elements.paneResizer.classList.remove('is-dragging');
+
+            if (
+                event &&
+                typeof this.elements.paneResizer.hasPointerCapture === 'function' &&
+                this.elements.paneResizer.hasPointerCapture(event.pointerId)
+            ) {
+                this.elements.paneResizer.releasePointerCapture(event.pointerId);
+            }
+        }
+    },
+
+    HandlePaneResizerKeydown: function (event) {
+        if (this.state.isMobileView || !this.state.editorVisible) {
+            return;
+        }
+
+        const step = event.shiftKey ? 64 : 24;
+        const bounds = this.GetEditorWidthBounds();
+
+        switch (event.key) {
+            case 'ArrowLeft':
+                this.state.desktopEditorWidth = this.ClampEditorWidth((this.state.desktopEditorWidth || this.getDefaultEditorWidth()) - step);
+                break;
+            case 'ArrowRight':
+                this.state.desktopEditorWidth = this.ClampEditorWidth((this.state.desktopEditorWidth || this.getDefaultEditorWidth()) + step);
+                break;
+            case 'Home':
+                this.state.desktopEditorWidth = bounds.min;
+                break;
+            case 'End':
+                this.state.desktopEditorWidth = bounds.max;
+                break;
+            default:
+                return;
+        }
+
+        event.preventDefault();
+        this.ApplyDesktopPaneLayout();
+    },
+
+    GetEditorWidthBounds: function () {
+        const containerWidth = this.elements.container ? this.elements.container.clientWidth : 0;
+        const fallbackWidth = Math.max(0, Math.floor((containerWidth - this.config.paneResizerWidth) / 2));
+        const min = Math.min(this.config.minPaneWidth, fallbackWidth);
+        const max = containerWidth - min - this.config.paneResizerWidth;
+
+        if (max <= min) {
+            return { min: fallbackWidth, max: fallbackWidth };
+        }
+
+        return { min, max };
+    },
+
+    getDefaultEditorWidth: function () {
+        const containerWidth = this.elements.container ? this.elements.container.clientWidth : 0;
+        return this.ClampEditorWidth(Math.round(containerWidth * 0.5));
+    },
+
+    ClampEditorWidth: function (width) {
+        const bounds = this.GetEditorWidthBounds();
+
+        if (!Number.isFinite(width)) {
+            return bounds.max;
+        }
+
+        return Math.min(Math.max(width, bounds.min), bounds.max);
+    },
+
+    ApplyDesktopPaneLayout: function () {
+        if (!this.elements.container || !this.elements.editorPane || !this.elements.previewPane) {
+            return;
+        }
+
+        this.elements.container.classList.toggle('editor-hidden', !this.state.editorVisible);
+        this.elements.editorPane.style.display = this.state.editorVisible ? 'flex' : 'none';
+        this.elements.previewPane.style.display = 'block';
+
+        if (this.elements.paneResizer) {
+            this.elements.paneResizer.hidden = !this.state.editorVisible;
+        }
+
+        if (this.state.editorVisible) {
+            const nextWidth = this.ClampEditorWidth(this.state.desktopEditorWidth || this.getDefaultEditorWidth());
+            this.state.desktopEditorWidth = nextWidth;
+            this.elements.container.style.setProperty('--editor-pane-width', `${nextWidth}px`);
+        } else {
+            this.elements.container.style.removeProperty('--editor-pane-width');
+        }
+
+        this.UpdatePaneResizerAccessibility();
+        this.updateEditorToggleButton();
+    },
+
+    ApplyMobilePaneLayout: function () {
+        if (!this.elements.container || !this.elements.editorPane || !this.elements.previewPane) {
+            return;
+        }
+
+        this.elements.container.classList.remove('editor-hidden');
+        this.elements.container.style.removeProperty('--editor-pane-width');
+        this.elements.editorPane.style.display = this.state.currentMobilePane === 'editor' ? 'flex' : 'none';
+        this.elements.previewPane.style.display = this.state.currentMobilePane === 'preview' ? 'block' : 'none';
+
+        if (this.elements.paneResizer) {
+            this.elements.paneResizer.hidden = true;
+        }
+
+        this.UpdatePaneResizerAccessibility();
+        this.updateEditorToggleButton();
+    },
+
+    UpdatePaneResizerAccessibility: function () {
+        if (!this.elements.paneResizer || !this.elements.container) {
+            return;
+        }
+
+        if (this.state.isMobileView || !this.state.editorVisible) {
+            this.elements.paneResizer.setAttribute('aria-valuenow', '0');
+            this.elements.paneResizer.setAttribute('aria-valuetext', 'Editor hidden');
+            return;
+        }
+
+        const containerWidth = this.elements.container.clientWidth;
+        const widthPercent = containerWidth > 0
+            ? Math.round((this.state.desktopEditorWidth / containerWidth) * 100)
+            : 50;
+
+        this.elements.paneResizer.setAttribute('aria-valuemin', '0');
+        this.elements.paneResizer.setAttribute('aria-valuemax', '100');
+        this.elements.paneResizer.setAttribute('aria-valuenow', String(widthPercent));
+        this.elements.paneResizer.setAttribute('aria-valuetext', `Editor width ${widthPercent}%`);
+    },
+
+    updateEditorToggleButton: function () {
+        const buttons = [
+            this.elements.toggleEditorVisibilityBtn,
+            this.elements.toggleEditorVisibilityMobileBtn,
+        ].filter(Boolean);
+
+        if (buttons.length === 0) {
+            return;
+        }
+
+        const isEditorShown = this.state.isMobileView
+            ? this.state.currentMobilePane === 'editor'
+            : this.state.editorVisible;
+
+        buttons.forEach((button) => {
+            button.textContent = isEditorShown ? 'Hide Editor' : 'Show Editor';
+            button.setAttribute('aria-expanded', String(isEditorShown));
+        });
     },
 
     setupAutosave: function () {
@@ -510,20 +757,13 @@ const Editor = {
     },
 
     CheckMobileView: function () {
-        const wasMobile = this.state.isMobileView;
         this.state.isMobileView = window.innerWidth <= 768;
 
-        if (wasMobile !== this.state.isMobileView) {
-            if (this.state.isMobileView) {
-                this.SetMobilePane(this.state.currentMobilePane);
-            } else {
-                if (this.elements.textarea && this.elements.textarea.parentElement) {
-                    this.elements.textarea.parentElement.style.display = 'flex';
-                }
-                if (this.elements.previewPane) {
-                    this.elements.previewPane.style.display = 'flex';
-                }
-            }
+        if (this.state.isMobileView) {
+            this.StopPaneResize();
+            this.ApplyMobilePaneLayout();
+        } else {
+            this.ApplyDesktopPaneLayout();
         }
     },
 
@@ -537,13 +777,7 @@ const Editor = {
             this.elements.showPreviewBtn.classList.toggle('active', pane === 'preview');
         }
 
-        if (this.elements.textarea && this.elements.textarea.parentElement) {
-            this.elements.textarea.parentElement.style.display = pane === 'editor' ? 'flex' : 'none';
-        }
-
-        if (this.elements.previewPane) {
-            this.elements.previewPane.style.display = pane === 'preview' ? 'flex' : 'none';
-        }
+        this.ApplyMobilePaneLayout();
 
         if (pane === 'preview') {
             this.UpdatePreview();

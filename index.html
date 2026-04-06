@@ -79,7 +79,7 @@
 
 <body>
   <div class="toolbar">
-    <a href="https://github.com/nav9v/online-markdown-editor" target="_blank" rel="noopener noreferrer"
+    <a href="https://github.com/ugmurthy/online-markdown-editor" target="_blank" rel="noopener noreferrer"
       class="source-code-link">Get Source Code</a>
 
 
@@ -92,6 +92,8 @@
       <button id="btn-show-editor" class="active">Editor</button>
       <button id="btn-show-preview">Preview</button>
     </div>
+
+    <button id="btn-toggle-editor-visibility-mobile" class="mobile-editor-visibility-btn" aria-controls="editor-pane preview-pane" aria-expanded="true">Hide Editor</button>
 
 
     <div id="mobile-menu" class="mobile-menu">
@@ -146,6 +148,9 @@
         <button id="btn-mathjax" data-engine="mathjax">MathJax</button>
         <button id="btn-katex" data-engine="katex" class="active">KaTeX</button>
       </div>
+
+
+      <button id="btn-toggle-editor-visibility" aria-controls="editor-pane preview-pane" aria-expanded="true">Hide Editor</button>
 
 
       <div class="dropdown">
@@ -283,6 +288,7 @@ async function getData(url) {
 This text tries to use features that might fail in less robust editors, especially AI-generated content mixing complex math and code blocks.
       </textarea>
     </div>
+    <div id="pane-resizer" class="pane-resizer" role="separator" aria-label="Resize editor and preview panes" aria-orientation="vertical" tabindex="0"></div>
     <div class="pane" id="preview-pane">
       <div id="custom-css-container">
         <h4>Custom Preview CSS</h4>
