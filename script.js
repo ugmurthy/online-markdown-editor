@@ -23,6 +23,7 @@ const Editor = {
         currentMathEngine: 'katex',
         currentMarkdownEngine: 'markdown-it',
         customCssVisible: false,
+        toolbarDeckOpen: false,
         lastText: '',
         lastRenderedHTML: '',
         mathJaxRunning: false,
@@ -51,6 +52,7 @@ const Editor = {
         previewPane: null,
         paneResizer: null,
         toolbar: null,
+        toolbarDeck: null,
         markdownItBtn: null,
         markedBtn: null,
         mathJaxBtn: null,
@@ -66,10 +68,10 @@ const Editor = {
         closeCssBtn: null,
         customStyleTag: null,
         buffer: null,
-        showEditorBtn: null,
-        showPreviewBtn: null,
         toggleEditorVisibilityBtn: null,
-        toggleEditorVisibilityMobileBtn: null,
+        toggleToolbarDeckBtn: null,
+        uploadFileBtn: null,
+        fileUploadInput: null,
         autosaveIndicator: null,
     },
     markdownItInstance: null,
@@ -108,6 +110,7 @@ const Editor = {
         this.elements.previewPane = document.getElementById("preview-pane");
         this.elements.paneResizer = document.getElementById("pane-resizer");
         this.elements.toolbar = document.querySelector(".toolbar");
+        this.elements.toolbarDeck = document.getElementById("toolbar-deck");
         this.elements.markdownItBtn = document.getElementById("btn-markdown-it");
         this.elements.markedBtn = document.getElementById("btn-marked");
         this.elements.mathJaxBtn = document.getElementById("btn-mathjax");
@@ -122,10 +125,10 @@ const Editor = {
         this.elements.applyCssBtn = document.getElementById("btn-apply-css");
         this.elements.closeCssBtn = document.getElementById("btn-close-css");
         this.elements.customStyleTag = document.getElementById("custom-styles-output");
-        this.elements.showEditorBtn = document.getElementById("btn-show-editor");
-        this.elements.showPreviewBtn = document.getElementById("btn-show-preview");
         this.elements.toggleEditorVisibilityBtn = document.getElementById("btn-toggle-editor-visibility");
-        this.elements.toggleEditorVisibilityMobileBtn = document.getElementById("btn-toggle-editor-visibility-mobile");
+        this.elements.toggleToolbarDeckBtn = document.getElementById("btn-toggle-toolbar-deck");
+        this.elements.uploadFileBtn = document.getElementById("btn-upload-file");
+        this.elements.fileUploadInput = document.getElementById("file-upload-input");
         this.elements.autosaveIndicator = document.getElementById("autosave-indicator");
 
         if (!this.elements.container || !this.elements.editorPane || !this.elements.textarea || !this.elements.previewContent || !this.elements.previewPane || !this.elements.paneResizer) {
@@ -249,8 +252,16 @@ const Editor = {
             this.elements.toggleEditorVisibilityBtn.addEventListener('click', () => this.ToggleEditorVisibility());
         }
 
-        if (this.elements.toggleEditorVisibilityMobileBtn) {
-            this.elements.toggleEditorVisibilityMobileBtn.addEventListener('click', () => this.ToggleEditorVisibility());
+        if (this.elements.toggleToolbarDeckBtn) {
+            this.elements.toggleToolbarDeckBtn.addEventListener('click', () => this.ToggleToolbarDeck());
+        }
+
+        if (this.elements.uploadFileBtn) {
+            this.elements.uploadFileBtn.addEventListener('click', () => this.OpenFilePicker());
+        }
+
+        if (this.elements.fileUploadInput) {
+            this.elements.fileUploadInput.addEventListener('change', (event) => this.HandleFileUpload(event));
         }
 
         if (this.elements.paneResizer) {
@@ -267,13 +278,7 @@ const Editor = {
         this.state.desktopEditorWidth = this.getDefaultEditorWidth();
         this.CheckMobileView();
         window.addEventListener('resize', this.CheckMobileView.bind(this));
-
-        if (this.elements.showEditorBtn && this.elements.showPreviewBtn) {
-            this.elements.showEditorBtn.addEventListener('click', () => this.SetMobilePane('editor'));
-            this.elements.showPreviewBtn.addEventListener('click', () => this.SetMobilePane('preview'));
-        }
-
-        this.ConnectMobileMenuButtons();
+        this.ApplyToolbarDeckState();
     },
 
     ToggleEditorVisibility: function () {
@@ -468,10 +473,7 @@ const Editor = {
     },
 
     updateEditorToggleButton: function () {
-        const buttons = [
-            this.elements.toggleEditorVisibilityBtn,
-            this.elements.toggleEditorVisibilityMobileBtn,
-        ].filter(Boolean);
+        const buttons = [this.elements.toggleEditorVisibilityBtn].filter(Boolean);
 
         if (buttons.length === 0) {
             return;
@@ -482,9 +484,88 @@ const Editor = {
             : this.state.editorVisible;
 
         buttons.forEach((button) => {
-            button.textContent = isEditorShown ? 'Hide Editor' : 'Show Editor';
+            const label = isEditorShown ? 'Hide editor' : 'Show editor';
             button.setAttribute('aria-expanded', String(isEditorShown));
+            button.setAttribute('aria-label', label);
+            button.setAttribute('title', label);
+            button.classList.toggle('is-active', isEditorShown);
+
+            const accessibleText = button.querySelector('.visually-hidden');
+            if (accessibleText) {
+                accessibleText.textContent = label;
+            }
         });
+    },
+
+    ToggleToolbarDeck: function () {
+        this.state.toolbarDeckOpen = !this.state.toolbarDeckOpen;
+        this.ApplyToolbarDeckState();
+    },
+
+    ApplyToolbarDeckState: function () {
+        if (!this.elements.toolbar || !this.elements.toggleToolbarDeckBtn) {
+            return;
+        }
+
+        this.elements.toolbar.classList.toggle('is-deck-open', this.state.toolbarDeckOpen);
+
+        if (this.elements.toolbarDeck) {
+            this.elements.toolbarDeck.setAttribute('aria-hidden', String(!this.state.toolbarDeckOpen));
+        }
+
+        const label = this.state.toolbarDeckOpen
+            ? 'Hide customisation controls'
+            : 'Show customisation controls';
+
+        this.elements.toggleToolbarDeckBtn.setAttribute('aria-expanded', String(this.state.toolbarDeckOpen));
+        this.elements.toggleToolbarDeckBtn.setAttribute('aria-label', label);
+        this.elements.toggleToolbarDeckBtn.setAttribute('title', label);
+        this.elements.toggleToolbarDeckBtn.classList.toggle('is-active', this.state.toolbarDeckOpen);
+
+        const accessibleText = this.elements.toggleToolbarDeckBtn.querySelector('.visually-hidden');
+        if (accessibleText) {
+            accessibleText.textContent = label;
+        }
+    },
+
+    OpenFilePicker: function () {
+        if (!this.elements.fileUploadInput) {
+            return;
+        }
+
+        this.elements.fileUploadInput.value = '';
+        this.elements.fileUploadInput.click();
+    },
+
+    HandleFileUpload: function (event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) {
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = () => {
+            const content = typeof reader.result === 'string' ? reader.result : '';
+            this.elements.textarea.value = content;
+            this.SaveToLocalStorage();
+            this.state.lastText = '';
+            this.UpdatePreview(true);
+
+            if (!this.state.isMobileView || this.state.currentMobilePane === 'editor') {
+                this.elements.textarea.focus();
+            }
+
+            event.target.value = '';
+        };
+
+        reader.onerror = () => {
+            console.error('Error reading uploaded file:', reader.error);
+            alert('Unable to read that file. Please try another file.');
+            event.target.value = '';
+        };
+
+        reader.readAsText(file);
     },
 
     setupAutosave: function () {
@@ -772,11 +853,6 @@ const Editor = {
 
         this.state.currentMobilePane = pane;
 
-        if (this.elements.showEditorBtn && this.elements.showPreviewBtn) {
-            this.elements.showEditorBtn.classList.toggle('active', pane === 'editor');
-            this.elements.showPreviewBtn.classList.toggle('active', pane === 'preview');
-        }
-
         this.ApplyMobilePaneLayout();
 
         if (pane === 'preview') {
@@ -1010,81 +1086,6 @@ printContainer.querySelectorAll("h1").forEach(h => {
         } catch (e) {
             console.error("Error unescaping HTML:", e);
             return str;
-        }
-    },
-
-    ConnectMobileMenuButtons: function () {
-        const mobileButtons = {
-            markdownIt: document.getElementById('btn-markdown-it-mobile'),
-            marked: document.getElementById('btn-marked-mobile'),
-            mathjax: document.getElementById('btn-mathjax-mobile'),
-            katex: document.getElementById('btn-katex-mobile'),
-            downloadPdf: document.getElementById('btn-download-pdf-mobile'),
-            downloadMd: document.getElementById('btn-download-md-mobile'),
-            downloadTxt: document.getElementById('btn-download-txt-mobile'),
-            toggleCss: document.getElementById('btn-toggle-css-mobile'),
-        };
-
-        const mobileMenu = document.getElementById('mobile-menu');
-        const hamburgerBtn = document.getElementById('mobile-hamburger');
-
-        const closeMenu = () => {
-            if (mobileMenu && hamburgerBtn) {
-                mobileMenu.classList.remove('open');
-                hamburgerBtn.classList.remove('active');
-            }
-        };
-
-        if (mobileButtons.markdownIt && mobileButtons.marked) {
-            mobileButtons.markdownIt.addEventListener('click', () => {
-                this.SetMarkdownEngine('markdown-it');
-                closeMenu();
-            });
-
-            mobileButtons.marked.addEventListener('click', () => {
-                this.SetMarkdownEngine('marked');
-                closeMenu();
-            });
-        }
-
-        if (mobileButtons.mathjax && mobileButtons.katex) {
-            mobileButtons.mathjax.addEventListener('click', () => {
-                this.SetMathEngine('mathjax');
-                closeMenu();
-            });
-
-            mobileButtons.katex.addEventListener('click', () => {
-                this.SetMathEngine('katex');
-                closeMenu();
-            });
-        }
-
-        if (mobileButtons.downloadPdf) {
-            mobileButtons.downloadPdf.addEventListener('click', () => {
-                this.DownloadAs('pdf');
-                closeMenu();
-            });
-        }
-
-        if (mobileButtons.downloadMd) {
-            mobileButtons.downloadMd.addEventListener('click', () => {
-                this.DownloadAs('md');
-                closeMenu();
-            });
-        }
-
-        if (mobileButtons.downloadTxt) {
-            mobileButtons.downloadTxt.addEventListener('click', () => {
-                this.DownloadAs('txt');
-                closeMenu();
-            });
-        }
-
-        if (mobileButtons.toggleCss) {
-            mobileButtons.toggleCss.addEventListener('click', () => {
-                this.ToggleCustomCSS();
-                closeMenu();
-            });
         }
     },
 

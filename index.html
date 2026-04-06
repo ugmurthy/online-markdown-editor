@@ -20,6 +20,11 @@
   <meta name="msapplication-TileColor" content="#A31D1D">
   <meta name="theme-color" content="#F0EADC">
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+
   <link rel="stylesheet" href="style.css">
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.1/markdown-it.min.js"></script>
@@ -46,246 +51,361 @@
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@9.4.3/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11.14.0/dist/mermaid.min.js"></script>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <script src="script.js"></script>
-
-
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      const hamburgerBtn = document.getElementById('mobile-hamburger');
-      const mobileMenu = document.getElementById('mobile-menu');
-
-      if (hamburgerBtn && mobileMenu) {
-        hamburgerBtn.addEventListener('click', function () {
-          mobileMenu.classList.toggle('open');
-          hamburgerBtn.classList.toggle('active');
-        });
-
-
-        document.addEventListener('click', function (event) {
-          if (!mobileMenu.contains(event.target) && !hamburgerBtn.contains(event.target) && mobileMenu.classList.contains('open')) {
-            mobileMenu.classList.remove('open');
-            hamburgerBtn.classList.remove('active');
-          }
-        });
-      }
-    });
-  </script>
 </head>
 
 <body>
-  <div class="toolbar">
-    <a href="https://github.com/ugmurthy/online-markdown-editor" target="_blank" rel="noopener noreferrer"
-      class="source-code-link">Get Source Code</a>
+  <header class="toolbar">
+    <div id="toolbar-deck" class="toolbar-deck" aria-hidden="true">
+      <div class="toolbar-deck-surface">
+        <div class="toolbar-deck-grid">
+          <section class="toolbar-card toolbar-card-brand">
+            <p class="toolbar-kicker">Online Markdown Editor</p>
+            <p class="toolbar-heading">A warm control deck for rendering, exporting, and styling your markdown workspace.</p>
+            <div class="toolbar-brand-meta">
+              <a href="https://github.com/ugmurthy/online-markdown-editor" target="_blank" rel="noopener noreferrer"
+                class="source-code-link">Get Source Code</a>
+              <span class="toolbar-info">Using markdown-it, Marked, Mermaid, highlight.js</span>
+            </div>
+          </section>
 
+          <section class="toolbar-card">
+            <span class="toolbar-label">MD Engine</span>
+            <div class="button-group" id="md-engine-selector">
+              <button id="btn-markdown-it" data-engine="markdown-it" class="active">markdown-it</button>
+              <button id="btn-marked" data-engine="marked">marked</button>
+            </div>
+          </section>
 
-    <button id="mobile-hamburger" class="hamburger-btn" aria-label="Open menu">
-      🍔
-    </button>
+          <section class="toolbar-card">
+            <span class="toolbar-label">Math Engine</span>
+            <div class="button-group" id="math-engine-selector">
+              <button id="btn-mathjax" data-engine="mathjax">MathJax</button>
+              <button id="btn-katex" data-engine="katex" class="active">KaTeX</button>
+            </div>
+          </section>
 
+          <section class="toolbar-card toolbar-card-actions">
+            <span class="toolbar-label">Export & Styling</span>
+            <div class="toolbar-actions-row">
+              <div class="dropdown">
+                <button id="btn-download">Download ▼</button>
+                <div class="dropdown-content">
+                  <button id="btn-download-pdf">Save as PDF</button>
+                  <button id="btn-download-md">Save as MD</button>
+                  <button id="btn-download-txt">Save as TXT</button>
+                </div>
+              </div>
 
-    <div class="mobile-toggle-buttons">
-      <button id="btn-show-editor" class="active">Editor</button>
-      <button id="btn-show-preview">Preview</button>
+              <button id="btn-toggle-css">Custom CSS</button>
+            </div>
+          </section>
+
+          <section class="toolbar-card toolbar-card-status">
+            <span class="toolbar-label">Session</span>
+            <span id="autosave-indicator" class="autosave-indicator">Auto-saved</span>
+          </section>
+        </div>
+      </div>
     </div>
 
-    <button id="btn-toggle-editor-visibility-mobile" class="mobile-editor-visibility-btn" aria-controls="editor-pane preview-pane" aria-expanded="true">Hide Editor</button>
+    <div class="toolbar-rail">
+      <div class="toolbar-rail-copy">
+        <p class="toolbar-title">ONLINE MARKDOWN EDITOR</p>
+        <p class="toolbar-subtitle">Toggle the editor, reveal the hidden deck, or import a local file.</p>
+      </div>
 
+      <div class="toolbar-icon-group">
+        <button id="btn-toggle-editor-visibility" class="icon-button" type="button"
+          aria-controls="editor-pane preview-pane" aria-expanded="true" aria-label="Hide editor" title="Hide editor">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" fill="none" stroke="currentColor"
+              stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+            <circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+          </svg>
+          <span class="visually-hidden">Hide editor</span>
+        </button>
 
-    <div id="mobile-menu" class="mobile-menu">
-      <div class="mobile-menu-content">
+        <button id="btn-toggle-toolbar-deck" class="icon-button" type="button" aria-controls="toolbar-deck"
+          aria-expanded="false" aria-label="Show customisation controls" title="Show customisation controls">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M4 7h8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"></path>
+            <path d="M16 7h4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"></path>
+            <path d="M4 17h4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"></path>
+            <path d="M12 17h8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"></path>
+            <circle cx="14" cy="7" r="2.2" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+            <circle cx="10" cy="17" r="2.2" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+          </svg>
+          <span class="visually-hidden">Show customisation controls</span>
+        </button>
 
-        <div class="mobile-menu-section">
-          <label for="md-engine-mobile">MD Engine:</label>
-          <div class="button-group" id="md-engine-mobile">
-            <button id="btn-markdown-it-mobile" data-engine="markdown-it" class="active">markdown-it</button>
-            <button id="btn-marked-mobile" data-engine="marked">marked</button>
-          </div>
-        </div>
-
-
-        <div class="mobile-menu-section">
-          <label for="math-engine-mobile">Math Engine:</label>
-          <div class="button-group" id="math-engine-mobile">
-            <button id="btn-mathjax-mobile" data-engine="mathjax">MathJax</button>
-            <button id="btn-katex-mobile" data-engine="katex" class="active">KaTeX</button>
-          </div>
-        </div>
-
-
-        <div class="mobile-menu-section">
-          <label>Download:</label>
-          <div class="mobile-menu-buttons">
-            <button id="btn-download-pdf-mobile">Save as PDF</button>
-            <button id="btn-download-md-mobile">Save as MD</button>
-            <button id="btn-download-txt-mobile">Save as TXT</button>
-          </div>
-        </div>
-
-
-        <div class="mobile-menu-section">
-          <button id="btn-toggle-css-mobile">Custom CSS</button>
-        </div>
+        <button id="btn-upload-file" class="icon-button" type="button" aria-label="Upload a local file"
+          title="Upload a local file">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 16V4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"></path>
+            <path d="m7.5 8.5 4.5-4.5 4.5 4.5" fill="none" stroke="currentColor" stroke-linecap="round"
+              stroke-linejoin="round" stroke-width="1.8"></path>
+            <path d="M4 18.5v1.5h16v-1.5" fill="none" stroke="currentColor" stroke-linecap="round"
+              stroke-linejoin="round" stroke-width="1.8"></path>
+          </svg>
+          <span class="visually-hidden">Upload a local file</span>
+        </button>
+        <input id="file-upload-input" class="visually-hidden" type="file">
       </div>
     </div>
-
-
-    <div class="desktop-controls">
-
-      <label for="md-engine">MD Engine:</label>
-      <div class="button-group" id="md-engine-selector">
-        <button id="btn-markdown-it" data-engine="markdown-it" class="active">markdown-it</button>
-        <button id="btn-marked" data-engine="marked">marked</button>
-      </div>
-
-
-      <label for="math-engine">Math Engine:</label>
-      <div class="button-group" id="math-engine-selector">
-        <button id="btn-mathjax" data-engine="mathjax">MathJax</button>
-        <button id="btn-katex" data-engine="katex" class="active">KaTeX</button>
-      </div>
-
-
-      <button id="btn-toggle-editor-visibility" aria-controls="editor-pane preview-pane" aria-expanded="true">Hide Editor</button>
-
-
-      <div class="dropdown">
-        <button id="btn-download">Download ▼</button>
-        <div class="dropdown-content">
-          <button id="btn-download-pdf">Save as PDF</button>
-          <button id="btn-download-md">Save as MD</button>
-          <button id="btn-download-txt">Save as TXT</button>
-        </div>
-      </div>
-
-
-      <button id="btn-toggle-css">Custom CSS</button>
-
-
-      <span id="autosave-indicator" class="autosave-indicator">Auto-saved</span>
-    </div>
-
-    <span class="toolbar-info">Using markdown-it, Marked, Mermaid, highlight.js</span>
-  </div>
+  </header>
 
   <div class="container">
     <div class="pane" id="editor-pane">
       <textarea id="markdown-input" spellcheck="false" placeholder="Type Markdown, LaTeX, Mermaid... here!">
 
+
 # `Markdown` Editor Demo
 
 Features **Markdown** (via `markdown-it`) & (via `marked`) **Math** ($\LaTeX$), **Syntax Highlighting**, **Mermaid Diagrams**, and **Footnotes**[^1].
 
----
+This demo showcases more of ($\LaTeX$) and Mermaid than markdown.
 
-## Math Rendering
 
-Select **MathJax** or **KaTeX** using the buttons above.
-
-### Inline: $E=mc^2$ and \( ax^2 + bx + c = 0 \)
-
-### Display (Einstein Field Equations):
-$$ G_{\mu \nu} + \Lambda g_{\mu \nu} = \frac{8 \pi G}{c^4} T_{\mu \nu} $$
-
-### Display (Schwarzschild Metric):
-$$ ds^2 = -\left(1 - \frac{2GM}{c^2 r}\right) c^2 dt^2 + \left(1 - \frac{2GM}{c^2 r}\right)^{-1} dr^2 + r^2 (d\theta^2 + \sin^2\theta d\phi^2) $$
-
-### Aligned Equations (MathJax only works well here):
-\begin{align}
-\nabla \cdot \mathbf{E} &= \frac{\rho}{\epsilon_0} \\
-\nabla \cdot \mathbf{B} &= 0 \\
-\nabla \times \mathbf{E} &= -\frac{\partial \mathbf{B}}{\partial t} \\
-\nabla \times \mathbf{B} &= \mu_0 \mathbf{J} + \mu_0 \epsilon_0 \frac{\partial \mathbf{E}}{\partial t}
-\end{align}
+| Feature             | Support | Engine(s)               |
+| ------------------- | ------- | ----------------------- |
+| Basic Markdown      | Yes     | `markdown-it`, `marked` |
+| Math (LaTeX)        | Yes     | `MathJax`, `KaTeX`      |
+| Syntax Highlighting | Yes     | `highlight.js`          |
+| Diagrams            | Yes     | `Mermaid`               |
+| Footnotes           | Yes     | `markdown-it`           |
+| Custom CSS          | Yes     | Editor Feature          |
 
 ---
 
-# eg of `marked` 
+Here are some beautiful and complex physics equations rendered in LaTeX.- (**Generated by Grok 4**)
 
-#### **Einstein Field Equations**
-\[ G_{\mu \nu} + \Lambda g_{\mu \nu} = \frac{8 \pi G}{c^4} T_{\mu \nu} \]
+## 1. Equations
 
-#### **Metric Tensor (Schwarzschild Solution)**
-\[ ds^2 = -\left(1 - \frac{2GM}{c^2 r}\right) c^2 dt^2 + \left(1 - \frac{2GM}{c^2 r}\right)^{-1} dr^2 + r^2 d\Omega^2 \]
+### 1.1 Einstein Field Equations (General Relativity)
+
+```latex
+$$G_{\mu\nu} + \Lambda g_{\mu\nu} = \frac{8\pi G}{c^4} T_{\mu\nu}$$
+```
+
+$$G_{\mu\nu} + \Lambda g_{\mu\nu} = \frac{8\pi G}{c^4} T_{\mu\nu}$$
+
+or in full tensor form:
+
+```latex
+$$R_{\mu\nu} - \frac{1}{2}Rg_{\mu\nu} + \Lambda g_{\mu\nu} = \frac{8\pi G}{c^4} T_{\mu\nu}$$
+```
+
+$$R_{\mu\nu} - \frac{1}{2}Rg_{\mu\nu} + \Lambda g_{\mu\nu} = \frac{8\pi G}{c^4} T_{\mu\nu}$$
+
+### 1.2. Dirac Equation (Relativistic Quantum Mechanics)
+
+```latex
+$$i \gamma^\mu \partial_\mu \psi - m \psi = 0$$
+```
+
+$$i \gamma^\mu \partial_\mu \psi - m \psi = 0$$
+
+In covariant form with slash notation:
+
+```latex
+$$(i \not{\partial} - m) \psi = 0$$
+```
+
+$$(i \not{\partial} - m) \psi = 0$$
+
+### 1.3. Klein-Gordon Equation
+
+```latex
+$$\left( \frac{\partial^2}{\partial t^2} - \nabla^2 + m^2 \right) \phi = 0$$
+```
+
+$$\left( \frac{\partial^2}{\partial t^2} - \nabla^2 + m^2 \right) \phi = 0$$
+or in natural units:
+
+```latex
+$$(\square + m^2) \phi = 0$$
+```
+
+$$(\square + m^2) \phi = 0$$
+
+### 1.4. Schrödinger Equation (Time-dependent)
+
+```latex
+$$i \hbar \frac{\partial}{\partial t} \Psi(\mathbf{r}, t) = \hat{H} \Psi(\mathbf{r}, t)$$
+```
+
+$$i \hbar \frac{\partial}{\partial t} \Psi(\mathbf{r}, t) = \hat{H} \Psi(\mathbf{r}, t)$$
+
+### 1.5. Yang-Mills Field Strength Tensor (Quantum Field Theory)
+
+```latex
+$$F_{\mu\nu}^a = \partial_\mu A_\nu^a - \partial_\nu A_\mu^a + g f^{abc} A_\mu^b A_\nu^c$$
+```
+
+$$F_{\mu\nu}^a = \partial_\mu A_\nu^a - \partial_\nu A_\mu^a + g f^{abc} A_\mu^b A_\nu^c$$
+
+### 1.6. Navier-Stokes Equations (Fluid Dynamics)
+
+```latex
+$$\rho \left( \frac{\partial \mathbf{v}}{\partial t} + (\mathbf{v} \cdot \nabla) \mathbf{v} \right) = -\nabla p + \mu \nabla^2 \mathbf{v} + \mathbf{f}$$
+```
+
+$$\rho \left( \frac{\partial \mathbf{v}}{\partial t} + (\mathbf{v} \cdot \nabla) \mathbf{v} \right) = -\nabla p + \mu \nabla^2 \mathbf{v} + \mathbf{f}$$
+
+### 1.7. Lagrangian Density for Quantum Electrodynamics (QED)
+
+```latex
+$$\mathcal{L} = \bar{\psi}(i \not{D} - m)\psi - \frac{1}{4} F_{\mu\nu} F^{\mu\nu}$$
+```
+
+$$\mathcal{L} = \bar{\psi}(i \not{D} - m)\psi - \frac{1}{4} F_{\mu\nu} F^{\mu\nu}$$
+
+where $$\( D_\mu = \partial_\mu + ie A_\mu \)$$
+
+### 1.8. Black Hole Entropy (Bekenstein-Hawking)
+
+```latex
+$$S = \frac{k_B c^3 A}{4 \hbar G}$$
+```
+
+$$S = \frac{k_B c^3 A}{4 \hbar G}$$
+
+### 1.9. Very Complex One: Einstein-Hilbert Action
+
+```latex
+$$S = \frac{1}{16\pi G} \int R \sqrt{-g} \, d^4x + S_m$$
+```
+
+$$S = \frac{1}{16\pi G} \int R \sqrt{-g} \, d^4x + S_m$$
+
+### 1.10. Inline rendering
+
+### Inline: $E=mc^2$ and $\( ax^2 + bx + c = 0\)$
+
+## 2. Mermaid diagrams
 
 
-# eg of `marked-it`
-#### **Einstein Field Equations**
+### 2.1 StateDiagram
 
-$$
-G_{\mu \nu} + \Lambda g_{\mu \nu} = \frac{8 \pi G}{c^4} T_{\mu \nu}
-$$
-
-#### **Metric Tensor (Schwarzschild Solution)**
-
-$$
-ds^2 = -\left(1 - \frac{2GM}{c^2 r}\right) c^2 dt^2 + \left(1 - \frac{2GM}{c^2 r}\right)^{-1} dr^2 + r^2 d\Omega^2
-$$
-
-
-## Mermaid Diagram Example
 
 ```mermaid
-graph TD
-    A[Start] --> B{Is it Awesome :?};
-    B -- Yes --> C[Awesome!!];
-    B -- No --> D[Improve It!];
-    D --> B;
-    C --> E[Finish];
-    
-    E --> F[End];
-    
+stateDiagram
+    [*] --> Still
+    Still --> [*]
+
+    Still --> Moving
+    Moving --> Still
+    Moving --> Crash
+    Crash --> [*]
 ```
 
+### 2.2 Radar
+```mermaid
+radar-beta
+  title Restaurant Comparison
+  axis food["Food Quality"], service["Service"], price["Price"]
+  axis ambiance["Ambiance"]
+
+  curve a["Restaurant A"]{4, 3, 2, 4}
+  curve b["Restaurant B"]{3, 4, 3, 3}
+  curve c["Restaurant C"]{2, 3, 4, 2}
+  curve d["Restaurant D"]{2, 2, 4, 3}
+
+  graticule polygon
+  max 5
+```
+
+### 2.3 Sankey (Sources and sinks)
+```mermaid
 ---
-| Feature         | Support      | Engine(s)        |
-|-----------------|--------------|------------------|
-| Basic Markdown  | Yes          | `markdown-it`, `marked` |
-| Math (LaTeX)    | Yes          | `MathJax`, `KaTeX` |
-| Syntax Highlighting | Yes      | `highlight.js`   |
-| Diagrams        | Yes          | `Mermaid`        |
-| Footnotes       | Yes          | `markdown-it`    |
-| Custom CSS      | Yes          | Editor Feature   |
+config:
+  sankey:
+    showValues: false
+---
+sankey
 
+Agricultural 'waste',Bio-conversion,124.729
+Bio-conversion,Liquid,0.597
+Bio-conversion,Losses,26.862
+Bio-conversion,Solid,280.322
+Bio-conversion,Gas,81.144
+Biofuel imports,Liquid,35
+Biomass imports,Solid,35
+Coal imports,Coal,11.606
+Coal reserves,Coal,63.965
+Coal,Solid,75.571
+District heating,Industry,10.639
+District heating,Heating and cooling - commercial,22.505
+District heating,Heating and cooling - homes,46.184
+Electricity grid,Over generation / exports,104.453
+Electricity grid,Heating and cooling - homes,113.726
+Electricity grid,H2 conversion,27.14
+Electricity grid,Industry,342.165
+Electricity grid,Road transport,37.797
+Electricity grid,Agriculture,4.412
+Electricity grid,Heating and cooling - commercial,40.858
+Electricity grid,Losses,56.691
+Electricity grid,Rail transport,7.863
+Electricity grid,Lighting & appliances - commercial,90.008
+Electricity grid,Lighting & appliances - homes,93.494
+Gas imports,Ngas,40.719
+Gas reserves,Ngas,82.233
+Gas,Heating and cooling - commercial,0.129
+Gas,Losses,1.401
+Gas,Thermal generation,151.891
+Gas,Agriculture,2.096
+Gas,Industry,48.58
+Geothermal,Electricity grid,7.013
+H2 conversion,H2,20.897
+H2 conversion,Losses,6.242
+H2,Road transport,20.897
+Hydro,Electricity grid,6.995
+Liquid,Industry,121.066
+Liquid,International shipping,128.69
+Liquid,Road transport,135.835
+Liquid,Domestic aviation,14.458
+Liquid,International aviation,206.267
+Liquid,Agriculture,3.64
+Liquid,National navigation,33.218
+Liquid,Rail transport,4.413
+Marine algae,Bio-conversion,4.375
+Ngas,Gas,122.952
+Nuclear,Thermal generation,839.978
+Oil imports,Oil,504.287
+Oil reserves,Oil,107.703
+Oil,Liquid,611.99
+Other waste,Solid,56.587
+Other waste,Bio-conversion,77.81
+Pumped heat,Heating and cooling - homes,193.026
+Pumped heat,Heating and cooling - commercial,70.672
+Solar PV,Electricity grid,59.901
+Solar Thermal,Heating and cooling - homes,19.263
+Solar,Solar Thermal,19.263
+Solar,Solar PV,59.901
+Solid,Agriculture,0.882
+Solid,Thermal generation,400.12
+Solid,Industry,46.477
+Thermal generation,Electricity grid,525.531
+Thermal generation,Losses,787.129
+Thermal generation,District heating,79.329
+Tidal,Electricity grid,9.452
+UK land based bioenergy,Bio-conversion,182.01
+Wave,Electricity grid,19.013
+Wind,Electricity grid,289.366
 
-
-## Syntax Highlighting
-
-```python
-import numpy as np
-
-def main():
-    
-    x = np.array([1, 2, 3])
-    print(f"Hello from Python! {x.mean()}")
-
-if __name__ == "__main__":
-    main()
 ```
-
-```javascript
-async function getData(url) {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-    const data = await response.json();
-    console.log("Data:", data);
-    return data; 
-  } catch (error) {
-    console.error("Fetch failed:", error);
-  }
-}
-```
-
 ---
 
 [^1]: This is a footnote rendered by `markdown-it-footnote`.
 
 This text tries to use features that might fail in less robust editors, especially AI-generated content mixing complex math and code blocks.
+      
       </textarea>
     </div>
     <div id="pane-resizer" class="pane-resizer" role="separator" aria-label="Resize editor and preview panes" aria-orientation="vertical" tabindex="0"></div>
