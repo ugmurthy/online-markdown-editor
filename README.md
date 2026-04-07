@@ -45,6 +45,7 @@ Getting this running on your own machine is super simple because it's just HTML,
 - Added a draggable vertical separator so the editor and preview widths can be adjusted on desktop.
 - Added a header button to show or hide the editor.
 - Kept the mobile editor/preview switching behavior while wiring the same visibility control into smaller screens.
+- Theme select and a bit of styling.
 
 ## Why This Fork?
 
