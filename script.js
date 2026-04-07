@@ -18,6 +18,9 @@ const Editor = {
         autosaveInterval: 5000,
         minPaneWidth: 280,
         paneResizerWidth: 14,
+        // ── Watermark Configuration ──────────────────────────────
+        // Set to '' or null to disable the watermark on printed PDFs.
+        pdfWatermarkText: 'DRAFT',
     },
     state: {
         currentMathEngine: 'katex',
@@ -244,6 +247,24 @@ const Editor = {
         this.elements.downloadPdfBtn.addEventListener('click', () => this.DownloadAs('pdf'));
         this.elements.downloadMdBtn.addEventListener('click', () => this.DownloadAs('md'));
         this.elements.downloadTxtBtn.addEventListener('click', () => this.DownloadAs('txt'));
+
+        // Rail (icon dropdown) download buttons
+        const railPdf = document.getElementById('btn-download-pdf-rail');
+        const railMd = document.getElementById('btn-download-md-rail');
+        const railTxt = document.getElementById('btn-download-txt-rail');
+        if (railPdf) railPdf.addEventListener('click', () => this.DownloadAs('pdf'));
+        if (railMd) railMd.addEventListener('click', () => this.DownloadAs('md'));
+        if (railTxt) railTxt.addEventListener('click', () => this.DownloadAs('txt'));
+
+        // Watermark input in the settings deck
+        const watermarkInput = document.getElementById('watermark-input');
+        if (watermarkInput) {
+            watermarkInput.value = this.config.pdfWatermarkText || '';
+            watermarkInput.addEventListener('input', () => {
+                this.config.pdfWatermarkText = watermarkInput.value;
+            });
+        }
+
         this.elements.toggleCssBtn.addEventListener('click', this.ToggleCustomCSS.bind(this));
         this.elements.applyCssBtn.addEventListener('click', this.ApplyCustomCSS.bind(this));
         this.elements.closeCssBtn.addEventListener('click', this.ToggleCustomCSS.bind(this));
@@ -928,16 +949,15 @@ const Editor = {
     },
 
     DownloadAs: function (format) {
+        if (format === 'pdf') {
+            this._generatePdf();
+            return;
+        }
         const text = this.state.lastText;
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const filename = `markdown_export_${timestamp}.${format}`;
-
-        if (format === 'txt' || format === 'md') {
-            const blob = new Blob([text], { type: format === 'md' ? 'text/markdown;charset=utf-8' : 'text/plain;charset=utf-8' });
-            this._triggerDownload(blob, filename);
-        } else if (format === 'pdf') {
-            this._generatePdf(filename);
-        }
+        const blob = new Blob([text], { type: format === 'md' ? 'text/markdown;charset=utf-8' : 'text/plain;charset=utf-8' });
+        this._triggerDownload(blob, filename);
     },
 
     _triggerDownload: function (blob, filename) {
@@ -953,119 +973,23 @@ const Editor = {
         }, 100);
     },
 
-    _generatePdf: async function (filename) {
-        if (typeof html2canvas === 'undefined' || typeof jspdf === 'undefined') {
-            alert('PDF generation libraries not loaded yet. Please try again in a moment.');
-            return;
+    _generatePdf: function () {
+        // Inject / update the watermark element before printing
+        let watermarkEl = document.getElementById('print-watermark');
+        const watermarkText = this.config.pdfWatermarkText;
+
+        if (watermarkText) {
+            if (!watermarkEl) {
+                watermarkEl = document.createElement('div');
+                watermarkEl.id = 'print-watermark';
+                document.body.appendChild(watermarkEl);
+            }
+            watermarkEl.textContent = watermarkText;
+        } else if (watermarkEl) {
+            watermarkEl.remove();
         }
 
-        const previewContent = this.elements.previewContent;
-        if (!previewContent) return;
-
-        const downloadBtn = this.elements.downloadPdfBtn || document.getElementById('btn-download-pdf-mobile');
-        if (downloadBtn) {
-            downloadBtn.textContent = 'Generating...';
-            downloadBtn.disabled = true;
-        }
-
-        try {
-            const printContainer = document.createElement('div');
-printContainer.className = 'pdf-container';
-printContainer.innerHTML = previewContent.innerHTML;
-
-// 💥 Force inline span layout for all h1s (PDF workaround)
-printContainer.querySelectorAll("h1").forEach(h => {
-    const text = h.textContent;
-    h.innerHTML = ''; // clear
-    text.split(' ').forEach(word => {
-        const span = document.createElement('span');
-        span.textContent = word + ' ';
-        span.style.display = 'inline-block';
-        span.style.marginRight = '0.25em';
-        h.appendChild(span);
-    });
-    h.style.fontFamily = "Arial, sans-serif";
-    h.style.fontSize = "24pt";
-    h.style.fontWeight = "bold";
-});
-            printContainer.style.width = '650px';
-            printContainer.style.backgroundColor = 'white';
-            printContainer.style.color = 'black';
-            printContainer.style.padding = '40px';
-            printContainer.style.fontSize = '12pt';
-            printContainer.style.lineHeight = '1.4';
-            printContainer.style.position = 'absolute';
-            printContainer.style.top = '0';
-            printContainer.style.left = '-9999px';
-            document.body.appendChild(printContainer);
-
-            if (this.state.currentMathEngine === 'mathjax' && typeof MathJax !== 'undefined') {
-                await new Promise((resolve) => {
-                    MathJax.Hub.Queue(["Typeset", MathJax.Hub, printContainer], resolve);
-                });
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-
-            const codeBlocks = printContainer.querySelectorAll('pre, code');
-            codeBlocks.forEach(block => {
-                block.style.fontSize = '10pt';
-                block.style.overflow = 'hidden';
-                block.style.whiteSpace = 'pre-wrap';
-                block.style.wordWrap = 'break-word';
-                block.style.border = '1px solid #ccc';
-                block.style.padding = '8px';
-                block.style.borderRadius = '3px';
-                block.style.backgroundColor = '#f8f8f8';
-            });
-
-            const { jsPDF } = jspdf;
-            const pdf = new jsPDF('p', 'pt', 'a4');
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
-            const margin = 40;
-            const contentWidth = pageWidth - (margin * 2);
-            const pdfOptions = {
-                scale: 2,
-                useCORS: true,
-                allowTaint: true,
-                backgroundColor: '#ffffff',
-                logging: false,
-            };
-
-            const canvas = await html2canvas(printContainer, pdfOptions);
-            const imgData = canvas.toDataURL('image/jpeg', 0.95);
-            const imgWidth = contentWidth;
-            const ratio = canvas.height / canvas.width;
-            const imgHeight = contentWidth * ratio;
-
-            const pageInnerHeight = pageHeight - (margin * 2);
-            let heightLeft = imgHeight;
-            let position = margin;
-            let pageCount = 1;
-
-            pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
-            heightLeft -= pageInnerHeight;
-
-            while (heightLeft > 0) {
-                pageCount++;
-                position = heightLeft - imgHeight + margin;
-                pdf.addPage();
-                pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
-                heightLeft -= pageInnerHeight;
-            }
-
-            pdf.save(filename);
-            document.body.removeChild(printContainer);
-
-        } catch (error) {
-            console.error("Error generating PDF:", error);
-            alert(`Error generating PDF: ${error.message || 'Unknown error'}`);
-        } finally {
-            if (downloadBtn) {
-                downloadBtn.textContent = 'Save as PDF';
-                downloadBtn.disabled = false;
-            }
-        }
+        window.print();
     },
 
     EscapeHtml: function (str) {

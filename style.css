@@ -273,7 +273,8 @@ html {
     display: none;
     position: absolute;
     top: calc(100% + 10px);
-    left: 0;
+    left: auto;
+    right: 0;
     background-color: var(--panel-strong);
     min-width: 180px;
     box-shadow: var(--shadow-soft);
@@ -307,6 +308,32 @@ html {
 .toolbar .dropdown>button:focus+.dropdown-content,
 .toolbar .dropdown .dropdown-content:focus-within {
     display: block;
+}
+
+.toolbar .icon-dropdown {
+    display: inline-flex;
+}
+
+.toolbar-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.toolbar-field input[type="text"] {
+    padding: 8px 12px;
+    border: 1px solid rgba(185, 133, 85, 0.32);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.72);
+    font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+    font-size: 0.88rem;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.toolbar-field input[type="text"]:focus {
+    border-color: var(--accent);
 }
 
 .toolbar-rail {
@@ -1059,48 +1086,124 @@ input:focus {
     }
 }
 
+/* ── Watermark (hidden on screen, visible only in print) ── */
+#print-watermark {
+    display: none;
+}
+
 @media print {
-    body {
-        font-size: 11pt;
-        line-height: 1.4;
+    /* Hide everything except the rendered preview */
+    .toolbar,
+    #editor-pane,
+    .pane-resizer,
+    #custom-css-container,
+    .mobile-menu,
+    .mobile-nav-bar {
+        display: none !important;
     }
 
+    html,
+    body {
+        height: auto !important;
+        overflow: visible !important;
+        display: block !important;
+        background: white !important;
+        color: black !important;
+        margin: 0;
+        padding: 0;
+        font-size: 11pt;
+        line-height: 1.5;
+    }
+
+    .container {
+        display: block !important;
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+        margin: 0;
+        padding: 0;
+    }
+
+    #preview-pane,
+    #preview-content {
+        display: block !important;
+        width: 100% !important;
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+        position: static !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: white !important;
+        color: black !important;
+    }
+
+    /* Typography & page-break rules */
     pre,
     code {
         font-size: 9pt;
         white-space: pre-wrap;
         word-wrap: break-word;
-        page-break-inside: avoid;
+        break-inside: avoid;
     }
 
     table {
         width: 100%;
         border-collapse: collapse;
-        page-break-inside: avoid;
+        break-inside: avoid;
     }
 
     img,
     svg {
         max-width: 100% !important;
-        page-break-inside: avoid;
+        break-inside: avoid;
     }
 
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6 {
-        page-break-after: avoid;
-        page-break-inside: avoid;
+    h1, h2, h3, h4, h5, h6 {
+        break-after: avoid;
+        break-inside: avoid;
+    }
+
+    blockquote {
+        break-inside: avoid;
+    }
+
+    p {
+        orphans: 3;
+        widows: 3;
     }
 
     .page-break-before {
-        page-break-before: always;
+        break-before: page;
     }
 
     .page-break-after {
-        page-break-after: always;
+        break-after: page;
+    }
+
+    /* Watermark — diagonal text across every printed page */
+    #print-watermark {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 9999;
+        pointer-events: none;
+        font-size: 6rem;
+        font-weight: 700;
+        font-family: "IBM Plex Sans", sans-serif;
+        color: rgba(0, 0, 0, 0.06);
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transform: rotate(-35deg);
+        overflow: hidden;
     }
 }
 

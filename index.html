@@ -53,9 +53,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11.14.0/dist/mermaid.min.js"></script>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
   <script src="script.js"></script>
 </head>
 
@@ -93,16 +90,14 @@
           <section class="toolbar-card toolbar-card-actions">
             <span class="toolbar-label">Export & Styling</span>
             <div class="toolbar-actions-row">
-              <div class="dropdown">
-                <button id="btn-download">Download ▼</button>
-                <div class="dropdown-content">
-                  <button id="btn-download-pdf">Save as PDF</button>
-                  <button id="btn-download-md">Save as MD</button>
-                  <button id="btn-download-txt">Save as TXT</button>
-                </div>
-              </div>
-
+              <button id="btn-download-pdf">Print / Save as PDF</button>
+              <button id="btn-download-md">Save as MD</button>
+              <button id="btn-download-txt">Save as TXT</button>
               <button id="btn-toggle-css">Custom CSS</button>
+            </div>
+            <div class="toolbar-field">
+              <label class="toolbar-label" for="watermark-input">PDF Watermark</label>
+              <input id="watermark-input" type="text" placeholder="e.g. DRAFT, CONFIDENTIAL (blank to disable)">
             </div>
           </section>
 
@@ -156,6 +151,24 @@
           <span class="visually-hidden">Upload a local file</span>
         </button>
         <input id="file-upload-input" class="visually-hidden" type="file">
+
+        <div class="dropdown icon-dropdown">
+          <button id="btn-download" class="icon-button" type="button" aria-label="Download" title="Download">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M12 4v12" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"></path>
+              <path d="m7.5 11.5 4.5 4.5 4.5-4.5" fill="none" stroke="currentColor" stroke-linecap="round"
+                stroke-linejoin="round" stroke-width="1.8"></path>
+              <path d="M4 18.5v1.5h16v-1.5" fill="none" stroke="currentColor" stroke-linecap="round"
+                stroke-linejoin="round" stroke-width="1.8"></path>
+            </svg>
+            <span class="visually-hidden">Download</span>
+          </button>
+          <div class="dropdown-content">
+            <button id="btn-download-pdf-rail">Print / Save as PDF</button>
+            <button id="btn-download-md-rail">Save as MD</button>
+            <button id="btn-download-txt-rail">Save as TXT</button>
+          </div>
+        </div>
       </div>
     </div>
   </header>
