@@ -15,6 +15,7 @@ const Editor = {
         debounceDelay: 300,
         mathJaxProcessing: false,
         localStorageKey: 'markdownEditorContent',
+        themeStorageKey: 'markdownEditorTheme',
         autosaveInterval: 5000,
         minPaneWidth: 280,
         paneResizerWidth: 14,
@@ -26,6 +27,7 @@ const Editor = {
         currentMathEngine: 'katex',
         currentMarkdownEngine: 'markdown-it',
         customCssVisible: false,
+        currentTheme: 'blue',
         toolbarDeckOpen: false,
         lastText: '',
         lastRenderedHTML: '',
@@ -60,6 +62,8 @@ const Editor = {
         markedBtn: null,
         mathJaxBtn: null,
         kaTeXBtn: null,
+        themeBluBtn: null,
+        themeBwBtn: null,
         downloadBtn: null,
         downloadPdfBtn: null,
         downloadMdBtn: null,
@@ -94,6 +98,7 @@ const Editor = {
         this.setupEventListeners();
         this.initializeResponsiveUI();
         this.setupAutosave();
+        this.initializeTheme();
         this.LoadFromLocalStorage();
         this.state.lastText = this.elements.textarea.value;
 
@@ -118,6 +123,8 @@ const Editor = {
         this.elements.markedBtn = document.getElementById("btn-marked");
         this.elements.mathJaxBtn = document.getElementById("btn-mathjax");
         this.elements.kaTeXBtn = document.getElementById("btn-katex");
+        this.elements.themeBluBtn = document.getElementById("btn-theme-blue");
+        this.elements.themeBwBtn = document.getElementById("btn-theme-bw");
         this.elements.downloadBtn = document.getElementById("btn-download");
         this.elements.downloadPdfBtn = document.getElementById("btn-download-pdf");
         this.elements.downloadMdBtn = document.getElementById("btn-download-md");
@@ -244,9 +251,15 @@ const Editor = {
         this.elements.markedBtn.addEventListener('click', () => this.SetMarkdownEngine('marked'));
         this.elements.mathJaxBtn.addEventListener('click', () => this.SetMathEngine('mathjax'));
         this.elements.kaTeXBtn.addEventListener('click', () => this.SetMathEngine('katex'));
-        this.elements.downloadPdfBtn.addEventListener('click', () => this.DownloadAs('pdf'));
-        this.elements.downloadMdBtn.addEventListener('click', () => this.DownloadAs('md'));
-        this.elements.downloadTxtBtn.addEventListener('click', () => this.DownloadAs('txt'));
+        if (this.elements.themeBluBtn) {
+            this.elements.themeBluBtn.addEventListener('click', () => this.SetTheme('blue'));
+        }
+        if (this.elements.themeBwBtn) {
+            this.elements.themeBwBtn.addEventListener('click', () => this.SetTheme('bw'));
+        }
+        if (this.elements.downloadPdfBtn) this.elements.downloadPdfBtn.addEventListener('click', () => this.DownloadAs('pdf'));
+        if (this.elements.downloadMdBtn) this.elements.downloadMdBtn.addEventListener('click', () => this.DownloadAs('md'));
+        if (this.elements.downloadTxtBtn) this.elements.downloadTxtBtn.addEventListener('click', () => this.DownloadAs('txt'));
 
         // Rail (icon dropdown) download buttons
         const railPdf = document.getElementById('btn-download-pdf-rail');
@@ -916,6 +929,41 @@ const Editor = {
             
             this.state.lastText = '';
             this.UpdatePreview();
+        }
+    },
+
+    SetTheme: function (theme) {
+        if (theme === this.state.currentTheme) return;
+        this.state.currentTheme = theme;
+        document.documentElement.setAttribute('data-theme', theme);
+        if (this.elements.themeBluBtn) {
+            this.elements.themeBluBtn.classList.toggle('active', theme === 'blue');
+        }
+        if (this.elements.themeBwBtn) {
+            this.elements.themeBwBtn.classList.toggle('active', theme === 'bw');
+        }
+        try {
+            localStorage.setItem(this.config.themeStorageKey, theme);
+        } catch (err) {
+            console.error("Error saving theme:", err);
+        }
+    },
+
+    initializeTheme: function () {
+        try {
+            const saved = localStorage.getItem(this.config.themeStorageKey);
+            if (saved && (saved === 'blue' || saved === 'bw')) {
+                this.state.currentTheme = saved;
+            }
+        } catch (err) {
+            console.error("Error loading theme:", err);
+        }
+        document.documentElement.setAttribute('data-theme', this.state.currentTheme);
+        if (this.elements.themeBluBtn) {
+            this.elements.themeBluBtn.classList.toggle('active', this.state.currentTheme === 'blue');
+        }
+        if (this.elements.themeBwBtn) {
+            this.elements.themeBwBtn.classList.toggle('active', this.state.currentTheme === 'bw');
         }
     },
 
