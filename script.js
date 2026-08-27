@@ -679,8 +679,28 @@ const Editor = {
         }
     },
 
+    // Protect unambiguous currency amounts, while leaving numeric LaTeX such as $2 + 2$ intact.
+    // The marker is restored after the math engine has finished processing the rendered text.
+    ProtectCurrencyDollars: function (text) {
+        return text.replace(
+            /(?<!\\)\$(?=\d+(?:\.\d+)?(?:\s*(?:[kmbt](?![a-z])|thousand\b|million\b|billion\b|trillion\b)|\+\s*(?:thousand\b|million\b|billion\b|trillion\b)))/gi,
+            '\uE000'
+        );
+    },
+
+    RestoreCurrencyDollars: function () {
+        if (!this.elements.previewContent) return;
+
+        const textNodes = document.createTreeWalker(this.elements.previewContent, NodeFilter.SHOW_TEXT);
+        let textNode;
+        while ((textNode = textNodes.nextNode())) {
+            textNode.nodeValue = textNode.nodeValue.replace(/\uE000/g, '$');
+        }
+    },
+
     UpdatePreview: function (force = false) {
         const text = this.elements.textarea.value;
+        const protectedText = this.ProtectCurrencyDollars(text);
         if (!force && text === this.state.lastText && this.state.lastText !== '') return;
 
         try {
@@ -688,24 +708,24 @@ const Editor = {
                 (this.elements.previewPane.scrollHeight - this.elements.previewPane.clientHeight);
 
             if (this.state.currentMarkdownEngine === 'markdown-it' && this.state.libsReady.markdownIt) {
-                this.state.lastRenderedHTML = this.markdownItInstance.render(text);
+                this.state.lastRenderedHTML = this.markdownItInstance.render(protectedText);
                 this.elements.previewContent.innerHTML = this.state.lastRenderedHTML;
                 this.ProcessMath();
                 this.ProcessMermaid();
             }
             else if (this.state.currentMarkdownEngine === 'marked' && this.state.libsReady.marked) {
-                this.RenderWithMarked(text, scrollPercent);
+                this.RenderWithMarked(protectedText, scrollPercent, text);
                 return;
             }
             else {
                 // Try to use any available engine rather than showing error
                 if (this.state.libsReady.markdownIt) {
-                    this.state.lastRenderedHTML = this.markdownItInstance.render(text);
+                    this.state.lastRenderedHTML = this.markdownItInstance.render(protectedText);
                     this.elements.previewContent.innerHTML = this.state.lastRenderedHTML;
                     this.ProcessMath();
                     this.ProcessMermaid();
                 } else if (this.state.libsReady.marked) {
-                    this.RenderWithMarked(text, scrollPercent);
+                    this.RenderWithMarked(protectedText, scrollPercent, text);
                     return;
                 } else {
                     console.error("No valid markdown engine available");
@@ -723,7 +743,7 @@ const Editor = {
         }
     },
 
-    RenderWithMarked: function (text, scrollPercent) {
+    RenderWithMarked: function (text, scrollPercent, originalText = text) {
         if (!this.elements.buffer) {
             this.createBufferElement();
         }
@@ -743,9 +763,10 @@ const Editor = {
                                 const mathJaxProcessedHtml = this.elements.buffer.innerHTML;
                                 const finalHtml = marked.parse(mathJaxProcessedHtml);
                                 this.elements.previewContent.innerHTML = finalHtml;
+                                this.RestoreCurrencyDollars();
                                 this.ProcessMermaid();
                                 this._restoreScrollPosition(scrollPercent);
-                                this.state.lastText = text;
+                                this.state.lastText = originalText;
                             } catch (err) {
                                 console.error("Error updating preview after MathJax:", err);
                                 this.elements.previewContent.innerHTML = `<p style='color: red;'>Error updating preview with MathJax.</p>`;
@@ -769,9 +790,10 @@ const Editor = {
                     this.ProcessMath();
                 }
 
+                this.RestoreCurrencyDollars();
                 this.ProcessMermaid();
                 this._restoreScrollPosition(scrollPercent);
-                this.state.lastText = text;
+                this.state.lastText = originalText;
             } catch (err) {
                 console.error("Error during standard marked rendering:", err);
                 this.elements.previewContent.innerHTML = `<p style='color: red;'>Error rendering preview with marked.</p>`;
@@ -806,6 +828,7 @@ const Editor = {
                         ],
                         throwOnError: false
                     });
+                    this.RestoreCurrencyDollars();
                 }
             } else if (this.state.currentMathEngine === 'mathjax' && this.state.libsReady.mathJax) {
                 if (typeof MathJax !== 'undefined' && MathJax.Hub) {
@@ -813,7 +836,10 @@ const Editor = {
                     this.config.mathJaxProcessing = true;
                     MathJax.Hub.Queue(
                         ["Typeset", MathJax.Hub, this.elements.previewContent],
-                        () => { this.config.mathJaxProcessing = false; }
+                        () => {
+                            this.RestoreCurrencyDollars();
+                            this.config.mathJaxProcessing = false;
+                        }
                     );
                 }
             }
