@@ -682,9 +682,10 @@ const Editor = {
     // Protect unambiguous currency amounts, while leaving numeric LaTeX such as $2 + 2$ intact.
     // The marker is restored after the math engine has finished processing the rendered text.
     ProtectCurrencyDollars: function (text) {
+        const currencyMarker = String.fromCharCode(0xE000);
         return text.replace(
-            /(?<!\\)\$(?=\d+(?:\.\d+)?(?:\s*(?:[kmbt](?![a-z])|thousand\b|million\b|billion\b|trillion\b)|\+\s*(?:thousand\b|million\b|billion\b|trillion\b)))/gi,
-            '\uE000'
+            /[$](?=[0-9]+([.][0-9]+)?( *([kmbt](?![a-z])|thousand([^a-z]|$)|million([^a-z]|$)|billion([^a-z]|$)|trillion([^a-z]|$))|[+] *(thousand|million|billion|trillion)))/gi,
+            currencyMarker
         );
     },
 
@@ -694,7 +695,7 @@ const Editor = {
         const textNodes = document.createTreeWalker(this.elements.previewContent, NodeFilter.SHOW_TEXT);
         let textNode;
         while ((textNode = textNodes.nextNode())) {
-            textNode.nodeValue = textNode.nodeValue.replace(/\uE000/g, '$');
+            textNode.nodeValue = textNode.nodeValue.split(String.fromCharCode(0xE000)).join('$');
         }
     },
 
